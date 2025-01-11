@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Modbus Realtime Data</title>
+
+    <style>
+      table,
+      th,
+      td {
+        border: 1px solid black;
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        padding: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Modbus Realtime Data</h1>
+    <div id="data">
+      <table style="width: 100%; text-align: center; table-layout: fixed">
+        <tr>
+          <th>Add</th>
+          <th>Area</th>
+          <th>kWh</th>
+          <th>V1</th>
+          <th>V2</th>
+          <th>V3</th>
+          <th>A1</th>
+          <th>A2</th>
+          <th>A3</th>
+        </tr>
+        <tr>
+          <td>1</td>
+          <td>Workshop</td>
+          <td>
+            <span id="ws_kwh"></span>
+          </td>
+          <td>
+            <span id="ws_v1"></span>
+          </td>
+          <td>
+            <span id="ws_v2"></span>
+          </td>
+          <td>
+            <span id="ws_v3"></span>
+          </td>
+          <td>
+            <span id="ws_a1"></span>
+          </td>
+          <td>
+            <span id="ws_a2"></span>
+          </td>
+          <td>
+            <span id="ws_a3"></span>
+          </td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>Kompressor</td>
+          <td>
+            <span id="kompressor_kwh"></span>
+          </td>
+          <td>
+            <span id="kompressor_v1"></span>
+          </td>
+          <td>
+            <span id="kompressor_v2"></span>
+          </td>
+          <td>
+            <span id="kompressor_v3"></span>
+          </td>
+          <td>
+            <span id="kompressor_a1"></span>
+          </td>
+          <td>
+            <span id="kompressor_a2"></span>
+          </td>
+          <td>
+            <span id="kompressor_a3"></span>
+          </td>
+        </tr>
+      </table>
+      <p>Time: <span id="time"></span></p>
+
+      <!-- <p>A1: <span id="a1"></span></p>
+      <p>A2: <span id="a2"></span></p>
+      <p>A3: <span id="a3"></span></p>
+      
+      <p>V2: <span id="v2"></span></p>
+      <p>V3: <span id="v3"></span></p> -->
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io();
+      socket.on("modbusData", (data) => {
+        console.log(data);
+
+        document.getElementById("time").textContent = data.time;
+        document.getElementById("ws_kwh").textContent = data.workshop.kwh;
+        document.getElementById("ws_a1").textContent = data.workshop.a1;
+        document.getElementById("ws_a2").textContent = data.workshop.a2;
+        document.getElementById("ws_a3").textContent = data.workshop.a3;
+        document.getElementById("ws_v1").textContent = data.workshop.v1;
+        document.getElementById("ws_v2").textContent = data.workshop.v2;
+        document.getElementById("ws_v3").textContent = data.workshop.v3;
+        document.getElementById("kompressor_kwh").textContent =
+          data.kompressor.kwh;
+        document.getElementById("kompressor_a1").textContent =
+          data.kompressor.a1;
+        document.getElementById("kompressor_a2").textContent =
+          data.kompressor.a2;
+        document.getElementById("kompressor_a3").textContent =
+          data.kompressor.a3;
+        document.getElementById("kompressor_v1").textContent =
+          data.kompressor.v1;
+        document.getElementById("kompressor_v2").textContent =
+          data.kompressor.v2;
+        document.getElementById("kompressor_v3").textContent =
+          data.kompressor.v3;
+      });
+    </script>
+  </body>
+</html>
