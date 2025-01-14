@@ -1,104 +1,491 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+  <!--begin::Head-->
   <head>
     <title>Modbus Realtime Data</title>
-
-    <style>
-      table,
-      th,
-      td {
-        border: 1px solid black;
-        border-collapse: collapse;
-      }
-
-      th,
-      td {
-        padding: 10px;
-      }
-    </style>
-  </head>
-  <body>
-    <h1>Modbus Realtime Data</h1>
-    <div id="data">
-      <table style="width: 100%; text-align: center; table-layout: fixed">
-        <tr>
-          <th>Add</th>
-          <th>Area</th>
-          <th>kWh</th>
-          <th>V1</th>
-          <th>V2</th>
-          <th>V3</th>
-          <th>A1</th>
-          <th>A2</th>
-          <th>A3</th>
-        </tr>
-        <tr>
-          <td>1</td>
-          <td>Workshop</td>
-          <td>
-            <span id="ws_kwh"></span>
-          </td>
-          <td>
-            <span id="ws_v1"></span>
-          </td>
-          <td>
-            <span id="ws_v2"></span>
-          </td>
-          <td>
-            <span id="ws_v3"></span>
-          </td>
-          <td>
-            <span id="ws_a1"></span>
-          </td>
-          <td>
-            <span id="ws_a2"></span>
-          </td>
-          <td>
-            <span id="ws_a3"></span>
-          </td>
-        </tr>
-        <tr>
-          <td>2</td>
-          <td>Kompressor</td>
-          <td>
-            <span id="kompressor_kwh"></span>
-          </td>
-          <td>
-            <span id="kompressor_v1"></span>
-          </td>
-          <td>
-            <span id="kompressor_v2"></span>
-          </td>
-          <td>
-            <span id="kompressor_v3"></span>
-          </td>
-          <td>
-            <span id="kompressor_a1"></span>
-          </td>
-          <td>
-            <span id="kompressor_a2"></span>
-          </td>
-          <td>
-            <span id="kompressor_a3"></span>
-          </td>
-        </tr>
-      </table>
-      <p>Time: <span id="time"></span></p>
-
-      <!-- <p>A1: <span id="a1"></span></p>
-      <p>A2: <span id="a2"></span></p>
-      <p>A3: <span id="a3"></span></p>
-      
-      <p>V2: <span id="v2"></span></p>
-      <p>V3: <span id="v3"></span></p> -->
-    </div>
-    <script src="/socket.io/socket.io.js"></script>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="shortcut icon" href="assets/media/logos/favicon.ico" />
+    <!--begin::Fonts(mandatory for all pages)-->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700"
+    />
+    <!--end::Fonts-->
+    <!--begin::Vendor Stylesheets(used for this page only)-->
+    <link
+      rel="stylesheet"
+      href="/assets/plugins/custom/datatables/datatables.bundle.css"
+      type="text/css"
+    />
+    <!--end::Vendor Stylesheets-->
+    <!--begin::Global Stylesheets Bundle(mandatory for all pages)-->
+    <link
+      href="assets/plugins/global/plugins.bundle.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <link href="assets/css/style.bundle.css" rel="stylesheet" type="text/css" />
+    <!--end::Global Stylesheets Bundle-->
     <script>
+      // Frame-busting to prevent site from being loaded within a frame without permission (click-jacking) if (window.top != window.self) { window.top.location.replace(window.self.location.href); }
+    </script>
+  </head>
+  <!--end::Head-->
+  <!--begin::Body-->
+
+  <body id="kt_app_body" class="app-default">
+    <!--begin::Theme mode setup on page load-->
+    <script>
+      var defaultThemeMode = "light";
+      var themeMode = defaultThemeMode;
+      document.documentElement.setAttribute("data-bs-theme", themeMode);
+    </script>
+    <!--end::Theme mode setup on page load-->
+    <!--begin::App-->
+    <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
+      <!--begin::Page-->
+      <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
+        <!--begin::Header-->
+
+        <!--end::Header-->
+        <!--begin::Wrapper-->
+        <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
+          <!--begin::Sidebar-->
+
+          <!--end::Sidebar-->
+          <!--begin::Main-->
+          <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+            <!--begin::Content wrapper-->
+            <div class="d-flex flex-column flex-column-fluid">
+              <!--begin::Toolbar-->
+              <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+                <!--begin::Toolbar container-->
+                <div
+                  id="kt_app_toolbar_container"
+                  class="app-container container-fluid d-flex align-items-stretch"
+                >
+                  <!--begin::Toolbar wrapper-->
+                  <div
+                    class="app-toolbar-wrapper d-flex flex-stack flex-wrap gap-4 w-100"
+                  >
+                    <!--begin::Page title-->
+                    <div
+                      class="page-title d-flex flex-column justify-content-center gap-1 me-3"
+                    >
+                      <!--begin::Title-->
+                      <h1
+                        class="page-heading d-flex flex-column justify-content-center text-gray-900 fw-bold fs-3 m-0"
+                      >
+                        Power Meter
+                      </h1>
+                      <!--end::Title-->
+                    </div>
+                    <!--end::Page title-->
+                  </div>
+                  <!--end::Toolbar wrapper-->
+                </div>
+                <!--end::Toolbar container-->
+              </div>
+              <!--end::Toolbar-->
+              <!--begin::Content-->
+              <div id="kt_app_content" class="app-content flex-column-fluid">
+                <!--begin::Content container-->
+                <div
+                  id="kt_app_content_container"
+                  class="app-container container-fluid"
+                >
+                  <div class="card card-flush">
+                    <div class="card-body">
+                      <table
+                        id="kt_datatable_zero_configuration"
+                        class="table table-row-bordered gy-5"
+                      >
+                        <thead>
+                          <tr class="fw-semibold fs-6 text-muted">
+                            <th>Address</th>
+                            <th>Area</th>
+                            <th>kWh</th>
+                            <th>V1</th>
+                            <th>V2</th>
+                            <th>V3</th>
+                            <th>A1</th>
+                            <th>A2</th>
+                            <th>A3</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td>1</td>
+                            <td>Workshop</td>
+                            <td>
+                              <span id="ws_kwh"></span>
+                            </td>
+                            <td>
+                              <span id="ws_v1"></span>
+                            </td>
+                            <td>
+                              <span id="ws_v2"></span>
+                            </td>
+                            <td>
+                              <span id="ws_v3"></span>
+                            </td>
+                            <td>
+                              <span id="ws_a1"></span>
+                            </td>
+                            <td>
+                              <span id="ws_a2"></span>
+                            </td>
+                            <td>
+                              <span id="ws_a3"></span>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td>2</td>
+                            <td>Kompressor</td>
+                            <td>
+                              <span id="kompressor_kwh"></span>
+                            </td>
+                            <td>
+                              <span id="kompressor_v1"></span>
+                            </td>
+                            <td>
+                              <span id="kompressor_v2"></span>
+                            </td>
+                            <td>
+                              <span id="kompressor_v3"></span>
+                            </td>
+                            <td>
+                              <span id="kompressor_a1"></span>
+                            </td>
+                            <td>
+                              <span id="kompressor_a2"></span>
+                            </td>
+                            <td>
+                              <span id="kompressor_a3"></span>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td>3</td>
+                            <td>Lvmdb</td>
+                            <td>
+                              <span id="lvmdb_kwh"></span>
+                            </td>
+                            <td>
+                              <span id="lvmdb_v1"></span>
+                            </td>
+                            <td>
+                              <span id="lvmdb_v2"></span>
+                            </td>
+                            <td>
+                              <span id="lvmdb_v3"></span>
+                            </td>
+                            <td>
+                              <span id="lvmdb_a1"></span>
+                            </td>
+                            <td>
+                              <span id="lvmdb_a2"></span>
+                            </td>
+                            <td>
+                              <span id="lvmdb_a3"></span>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td>4</td>
+                            <td>DB Snack</td>
+                            <td>
+                              <span id="snack_kwh"></span>
+                            </td>
+                            <td>
+                              <span id="snack_v1"></span>
+                            </td>
+                            <td>
+                              <span id="snack_v2"></span>
+                            </td>
+                            <td>
+                              <span id="snack_v3"></span>
+                            </td>
+                            <td>
+                              <span id="snack_a1"></span>
+                            </td>
+                            <td>
+                              <span id="snack_a2"></span>
+                            </td>
+                            <td>
+                              <span id="snack_a3"></span>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td>5</td>
+                            <td>WTP</td>
+                            <td>
+                              <span id="wtp_kwh"></span>
+                            </td>
+                            <td>
+                              <span id="wtp_v1"></span>
+                            </td>
+                            <td>
+                              <span id="wtp_v2"></span>
+                            </td>
+                            <td>
+                              <span id="wtp_v3"></span>
+                            </td>
+                            <td>
+                              <span id="wtp_a1"></span>
+                            </td>
+                            <td>
+                              <span id="wtp_a2"></span>
+                            </td>
+                            <td>
+                              <span id="wtp_a3"></span>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td>6</td>
+                            <td>Cooling</td>
+                            <td>
+                              <span id="cooling_kwh"></span>
+                            </td>
+                            <td>
+                              <span id="cooling_v1"></span>
+                            </td>
+                            <td>
+                              <span id="cooling_v2"></span>
+                            </td>
+                            <td>
+                              <span id="cooling_v3"></span>
+                            </td>
+                            <td>
+                              <span id="cooling_a1"></span>
+                            </td>
+                            <td>
+                              <span id="cooling_a2"></span>
+                            </td>
+                            <td>
+                              <span id="cooling_a3"></span>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td>7</td>
+                            <td>DB 1st Floor</td>
+                            <td>
+                              <span id="db_lt1_kwh"></span>
+                            </td>
+                            <td>
+                              <span id="db_lt1_v1"></span>
+                            </td>
+                            <td>
+                              <span id="db_lt1_v2"></span>
+                            </td>
+                            <td>
+                              <span id="db_lt1_v3"></span>
+                            </td>
+                            <td>
+                              <span id="db_lt1_a1"></span>
+                            </td>
+                            <td>
+                              <span id="db_lt1_a2"></span>
+                            </td>
+                            <td>
+                              <span id="db_lt1_a3"></span>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td>8</td>
+                            <td>DB Packaging</td>
+                            <td>
+                              <span id="packaging_kwh"></span>
+                            </td>
+                            <td>
+                              <span id="packaging_v1"></span>
+                            </td>
+                            <td>
+                              <span id="packaging_v2"></span>
+                            </td>
+                            <td>
+                              <span id="packaging_v3"></span>
+                            </td>
+                            <td>
+                              <span id="packaging_a1"></span>
+                            </td>
+                            <td>
+                              <span id="packaging_a2"></span>
+                            </td>
+                            <td>
+                              <span id="packaging_a3"></span>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td>9</td>
+                            <td>Lighting 1st Floor</td>
+                            <td>
+                              <span id="lampu_lt1_kwh"></span>
+                            </td>
+                            <td>
+                              <span id="lampu_lt1_v1"></span>
+                            </td>
+                            <td>
+                              <span id="lampu_lt1_v2"></span>
+                            </td>
+                            <td>
+                              <span id="lampu_lt1_v3"></span>
+                            </td>
+                            <td>
+                              <span id="lampu_lt1_a1"></span>
+                            </td>
+                            <td>
+                              <span id="lampu_lt1_a2"></span>
+                            </td>
+                            <td>
+                              <span id="lampu_lt1_a3"></span>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td>10</td>
+                            <td>Cold Room Lighting</td>
+                            <td>
+                              <span id="lampu_ruangdingin_kwh"></span>
+                            </td>
+                            <td>
+                              <span id="lampu_ruangdingin_v1"></span>
+                            </td>
+                            <td>
+                              <span id="lampu_ruangdingin_v2"></span>
+                            </td>
+                            <td>
+                              <span id="lampu_ruangdingin_v3"></span>
+                            </td>
+                            <td>
+                              <span id="lampu_ruangdingin_a1"></span>
+                            </td>
+                            <td>
+                              <span id="lampu_ruangdingin_a2"></span>
+                            </td>
+                            <td>
+                              <span id="lampu_ruangdingin_a3"></span>
+                            </td>
+                          </tr>
+                          <!-- <tr>
+                            <td>2</td>
+                            <td>Kompressor</td>
+                            <td>
+                              <span id="kompressor_kwh"></span>
+                            </td>
+                            <td>
+                              <span id="kompressor_v1"></span>
+                            </td>
+                            <td>
+                              <span id="kompressor_v2"></span>
+                            </td>
+                            <td>
+                              <span id="kompressor_v3"></span>
+                            </td>
+                            <td>
+                              <span id="kompressor_a1"></span>
+                            </td>
+                            <td>
+                              <span id="kompressor_a2"></span>
+                            </td>
+                            <td>
+                              <span id="kompressor_a3"></span>
+                            </td>
+                          </tr> -->
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+                <!--end::Content container-->
+              </div>
+              <!--end::Content-->
+            </div>
+            <!--end::Content wrapper-->
+            <!--begin::Footer-->
+            <div id="kt_app_footer" class="app-footer">
+              <!--begin::Footer container-->
+              <div
+                class="app-container container-fluid d-flex flex-column flex-md-row flex-center flex-md-stack py-3"
+              >
+                <!--begin::Copyright-->
+                <div class="text-gray-900 order-2 order-md-1">
+                  <span class="text-muted fw-semibold me-1"
+                    ><span id="footer-year"></span>&copy;</span
+                  >
+                  <a
+                    href="#"
+                    target="_blank"
+                    class="text-gray-800 text-hover-primary"
+                    >_xzkrmx_</a
+                  >
+                </div>
+                <!--end::Copyright-->
+              </div>
+              <!--end::Footer container-->
+            </div>
+            <!--end::Footer-->
+          </div>
+          <!--end:::Main-->
+        </div>
+        <!--end::Wrapper-->
+      </div>
+      <!--end::Page-->
+    </div>
+    <!--end::App-->
+    <!--begin::Scrolltop-->
+    <div id="kt_scrolltop" class="scrolltop" data-kt-scrolltop="true">
+      <i class="ki-outline ki-arrow-up"></i>
+    </div>
+    <!--end::Scrolltop-->
+    <!--begin::Javascript-->
+    <script>
+      var hostUrl = "assets/";
+    </script>
+    <!--begin::Global Javascript Bundle(mandatory for all pages)-->
+    <script src="assets/plugins/global/plugins.bundle.js"></script>
+    <script src="assets/js/scripts.bundle.js"></script>
+    <!--end::Global Javascript Bundle-->
+    <!--begin::Vendors Javascript(used for this page only)-->
+    <script src="assets/plugins/custom/datatables/datatables.bundle.js"></script>
+    <!--end::Vendors Javascript-->
+    <!--begin::Custom Javascript(used for this page only)-->
+    <script src="assets/js/widgets.bundle.js"></script>
+    <script src="assets/js/custom/widgets.js"></script>
+    <script type="module">
+      const date = new Date();
+      $("#footer-year").text(date.getFullYear());
+
+      function updateClock() {
+        var now = new Date();
+        var hours = now.getHours();
+        var minutes = now.getMinutes();
+        var seconds = now.getSeconds();
+
+        var time =
+          hours + ":" + addZeroPadding(minutes) + ":" + addZeroPadding(seconds);
+
+        $("#time").text(time);
+
+        setTimeout(updateClock, 1000); // Update every second
+      }
+
+      function addZeroPadding(num) {
+        return (num < 10 ? "0" : "") + num;
+      }
+
+      updateClock();
+    </script>
+    <script src="/socket.io/socket.io.js"></script>
+    <!-- <script type="module"> -->
+    <script>
+      // import {
+      //     io
+      // } from "https://cdn.socket.io/4.8.1/socket.io.esm.min.js";
+      // const socket = io('ws://192.168.1.122:3000');
       const socket = io();
       socket.on("modbusData", (data) => {
         console.log(data);
 
-        document.getElementById("time").textContent = data.time;
+        // document.getElementById("time").textContent = data.time;
         document.getElementById("ws_kwh").textContent = data.workshop.kwh;
         document.getElementById("ws_a1").textContent = data.workshop.a1;
         document.getElementById("ws_a2").textContent = data.workshop.a2;
@@ -106,6 +493,7 @@
         document.getElementById("ws_v1").textContent = data.workshop.v1;
         document.getElementById("ws_v2").textContent = data.workshop.v2;
         document.getElementById("ws_v3").textContent = data.workshop.v3;
+
         document.getElementById("kompressor_kwh").textContent =
           data.kompressor.kwh;
         document.getElementById("kompressor_a1").textContent =
@@ -120,7 +508,88 @@
           data.kompressor.v2;
         document.getElementById("kompressor_v3").textContent =
           data.kompressor.v3;
+
+        document.getElementById("lvmdb_kwh").textContent = data.lvmdb.kwh;
+        document.getElementById("lvmdb_a1").textContent = data.lvmdb.a1;
+        document.getElementById("lvmdb_a2").textContent = data.lvmdb.a2;
+        document.getElementById("lvmdb_a3").textContent = data.lvmdb.a3;
+        document.getElementById("lvmdb_v1").textContent = data.lvmdb.v1;
+        document.getElementById("lvmdb_v2").textContent = data.lvmdb.v2;
+        document.getElementById("lvmdb_v3").textContent = data.lvmdb.v3;
+
+        document.getElementById("snack_a1").textContent = data.snack.a1;
+        document.getElementById("snack_a2").textContent = data.snack.a2;
+        document.getElementById("snack_a3").textContent = data.snack.a3;
+        document.getElementById("snack_v1").textContent = data.snack.v1;
+        document.getElementById("snack_v2").textContent = data.snack.v2;
+        document.getElementById("snack_v3").textContent = data.snack.v3;
+        document.getElementById("snack_kwh").textContent = data.snack.kwh;
+
+        document.getElementById("wtp_a1").textContent = data.wtp.a1;
+        document.getElementById("wtp_a2").textContent = data.wtp.a2;
+        document.getElementById("wtp_a3").textContent = data.wtp.a3;
+        document.getElementById("wtp_v1").textContent = data.wtp.v1;
+        document.getElementById("wtp_v2").textContent = data.wtp.v2;
+        document.getElementById("wtp_v3").textContent = data.wtp.v3;
+        document.getElementById("wtp_kwh").textContent = data.wtp.kwh;
+
+        document.getElementById("cooling_a1").textContent = data.cooling.a1;
+        document.getElementById("cooling_a2").textContent = data.cooling.a2;
+        document.getElementById("cooling_a3").textContent = data.cooling.a3;
+        document.getElementById("cooling_v1").textContent = data.cooling.v1;
+        document.getElementById("cooling_v2").textContent = data.cooling.v2;
+        document.getElementById("cooling_v3").textContent = data.cooling.v3;
+        document.getElementById("cooling_kwh").textContent = data.cooling.kwh;
+
+        document.getElementById("db_lt1_a1").textContent = data.lt1.a1;
+        document.getElementById("db_lt1_a2").textContent = data.lt1.a2;
+        document.getElementById("db_lt1_a3").textContent = data.lt1.a3;
+        document.getElementById("db_lt1_v1").textContent = data.lt1.v1;
+        document.getElementById("db_lt1_v2").textContent = data.lt1.v2;
+        document.getElementById("db_lt1_v3").textContent = data.lt1.v3;
+        document.getElementById("db_lt1_kwh").textContent = data.lt1.kwh;
+
+        document.getElementById("packaging_a1").textContent = data.packaging.a1;
+        document.getElementById("packaging_a2").textContent = data.packaging.a2;
+        document.getElementById("packaging_a3").textContent = data.packaging.a3;
+        document.getElementById("packaging_v1").textContent = data.packaging.v1;
+        document.getElementById("packaging_v2").textContent = data.packaging.v2;
+        document.getElementById("packaging_v3").textContent = data.packaging.v3;
+        document.getElementById("packaging_kwh").textContent =
+          data.packaging.kwh;
+
+        document.getElementById("lampu_lt1_a1").textContent = data.lampult1.a1;
+        document.getElementById("lampu_lt1_a2").textContent = data.lampult1.a2;
+        document.getElementById("lampu_lt1_a3").textContent = data.lampult1.a3;
+        document.getElementById("lampu_lt1_v1").textContent = data.lampult1.v1;
+        document.getElementById("lampu_lt1_v2").textContent = data.lampult1.v2;
+        document.getElementById("lampu_lt1_v3").textContent = data.lampult1.v3;
+        document.getElementById("lampu_lt1_kwh").textContent =
+          data.lampult1.kwh;
+
+        document.getElementById("lampu_ruangdingin_a1").textContent =
+          data.lampuruangdingin.a1;
+        document.getElementById("lampu_ruangdingin_a2").textContent =
+          data.lampuruangdingin.a2;
+        document.getElementById("lampu_ruangdingin_a3").textContent =
+          data.lampuruangdingin.a3;
+        document.getElementById("lampu_ruangdingin_v1").textContent =
+          data.lampuruangdingin.v1;
+        document.getElementById("lampu_ruangdingin_v2").textContent =
+          data.lampuruangdingin.v2;
+        document.getElementById("lampu_ruangdingin_v3").textContent =
+          data.lampuruangdingin.v3;
+        document.getElementById("lampu_ruangdingin_kwh").textContent =
+          data.lampuruangdingin.kwh;
       });
     </script>
+    <script>
+      $("#kt_datatable_zero_configuration").DataTable({
+        scrollX: true,
+      });
+    </script>
+    <!--end::Custom Javascript-->
+    <!--end::Javascript-->
   </body>
+  <!--end::Body-->
 </html>

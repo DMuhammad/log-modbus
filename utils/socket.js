@@ -5,7 +5,7 @@ let io;
 
 module.exports = {
   init: (httpServer) => {
-    io = new Server(httpServer, {});
+    io = new Server(httpServer, { cors: "https://npsfood.com" });
     return io;
   },
   getIO: () => {

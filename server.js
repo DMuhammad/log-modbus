@@ -20,6 +20,13 @@ const configuration = new SerialPort({
 });
 moment.locale("id");
 
+// Inisialisasi variabel untuk menyimpan data terbaru
+let latestData = {
+  time: null,
+  workshop: null,
+  kompressor: null,
+};
+
 async function readModbusData(slaveId, area) {
   try {
     const client = new modbus.client.RTU(configuration, slaveId);
@@ -32,7 +39,12 @@ async function readModbusData(slaveId, area) {
     let registerKwh;
     const numberOfRegisters = 2; // Jumlah register yang dibaca per data (Biasanya 2 untuk float)
 
-    if (client.slaveId == 2 || client.slaveId == 6) {
+    if (
+      client.slaveId == 2 ||
+      client.slaveId == 3 ||
+      client.slaveId == 4 ||
+      client.slaveId == 7
+    ) {
       registerV1 = 0x0000;
       registerV2 = 0x0010;
       registerV3 = 0x0020;
@@ -40,7 +52,14 @@ async function readModbusData(slaveId, area) {
       registerA2 = 0x0012;
       registerA3 = 0x0022;
       registerKwh = 0x005e;
-    } else if (client.slaveId == 1) {
+    } else if (
+      client.slaveId == 1 ||
+      client.slaveId == 5 ||
+      client.slaveId == 6 ||
+      client.slaveId == 8 ||
+      client.slaveId == 9 ||
+      client.slaveId == 10
+    ) {
       registerV1 = 0x0000;
       registerV2 = 0x000a;
       registerV3 = 0x0014;
@@ -97,110 +116,6 @@ async function readModbusData(slaveId, area) {
   }
 }
 
-// function readModbusData() {
-//   let datas = [
-//     {
-//       area: "Workshop",
-//       data: {
-//         v1: "",
-//         v2: "",
-//         v3: "",
-//         a1: "",
-//         a2: "",
-//         a3: "",
-//         kwh: "",
-//       },
-//     },
-//     {
-//       area: "Kompressor",
-//       data: {
-//         v1: "",
-//         v2: "",
-//         v3: "",
-//         a1: "",
-//         a2: "",
-//         a3: "",
-//         kwh: "",
-//       },
-//     },
-//   ];
-//   let registerV1;
-//   let registerV2;
-//   let registerV3;
-//   let registerA1;
-//   let registerA2;
-//   let registerA3;
-//   let registerKwh;
-//   const numberOfRegisters = 2; // Jumlah register yang dibaca per data (Biasanya 2 untuk float)
-
-//   if (client.slaveId == 2 || client.slaveId == 6) {
-//     registerV1 = 0x0000;
-//     registerV2 = 0x0010;
-//     registerV3 = 0x0020;
-//     registerA1 = 0x0002;
-//     registerA2 = 0x0012;
-//     registerA3 = 0x0022;
-//     registerKwh = 0x005e;
-//   } else if (client.slaveId == 1) {
-//     registerV1 = 0x0000;
-//     registerV2 = 0x000a;
-//     registerV3 = 0x0014;
-//     registerA1 = 0x0002;
-//     registerA2 = 0x000c;
-//     registerA3 = 0x0016;
-//     registerKwh = 0x003c;
-//   }
-
-//   let data;
-
-//   Promise.all([
-//     client.readHoldingRegisters(registerV1, numberOfRegisters),
-//     client.readHoldingRegisters(registerV2, numberOfRegisters),
-//     client.readHoldingRegisters(registerV3, numberOfRegisters),
-//     client.readHoldingRegisters(registerA1, numberOfRegisters),
-//     client.readHoldingRegisters(registerA2, numberOfRegisters),
-//     client.readHoldingRegisters(registerA3, numberOfRegisters),
-//     client.readHoldingRegisters(registerKwh, numberOfRegisters),
-//   ])
-//     .then((values) => {
-//       const [dataV1, dataV2, dataV3, dataA1, dataA2, dataA3, dataKwh] = values;
-
-//       data = {
-//         kwh: dataKwh.response.body.values[1],
-//         v1: dataV1.response.body.values[1],
-//         v2: dataV2.response.body.values[1],
-//         v3: dataV3.response.body.values[1],
-//         a1: dataA1.response.body.values[1] / 1000,
-//         a2: dataA2.response.body.values[1] / 1000,
-//         a3: dataA3.response.body.values[1] / 1000,
-//       }
-
-//       // Kirim data ke klien melalui Socket.IO
-//       io.emit("modbusData", {
-//         time: moment().format("LTS"),
-//         kwh: dataKwh.response.body.values[1],
-//         v1: dataV1.response.body.values[1],
-//         v2: dataV2.response.body.values[1],
-//         v3: dataV3.response.body.values[1],
-//         a1: dataA1.response.body.values[1] / 1000,
-//         a2: dataA2.response.body.values[1] / 1000,
-//         a3: dataA3.response.body.values[1] / 1000,
-//       });
-
-//       console.log("Data Modbus:");
-//       console.log("V1:", dataV1.response.body.values[1]);
-//       console.log("V2:", dataV2.response.body.values[1]);
-//       console.log("V3:", dataV3.response.body.values[1]);
-//       console.log("A1:", dataA1.response.body.values[1] / 1000);
-//       console.log("A2:", dataA2.response.body.values[1] / 1000);
-//       console.log("A3:", dataA3.response.body.values[1] / 1000);
-//       console.log("kWh:", dataKwh.response.body.values[1]);
-//     })
-//     .catch((err) => {
-//       console.error("Error:", err);
-//     });
-// }
-
 io.on("connection", (socket) => {
   console.log("User connected");
 
@@ -209,24 +124,68 @@ io.on("connection", (socket) => {
   });
 });
 
+app.use(
+  cors({
+    credentials: true,
+    origin: "https://npsfood.com",
+  })
+);
+
+app.use(express.static(__dirname));
+
 app.get("/", (req, res) => {
+  // res.render("index");
   res.sendFile(__dirname + "/index.html");
 });
 
-server.listen(8000, () => {
-  console.log("Server is running on port: 8000");
+// Endpoint untuk mengambil data Modbus
+app.get("/api/data", (req, res) => {
+  res.json(latestData);
+});
+
+server.listen(3000, "0.0.0.0", () => {
+  console.log("Server is running on port: 3000");
 
   setInterval(async () => {
     const db_workshop = await readModbusData(1, "workshop");
     await delay(2000);
     const db_kompressor = await readModbusData(2, "kompressor");
-    // const db_kompressor = await readModbusData(2);
+    await delay(2000);
+    const db_lvmdb = await readModbusData(2, "lvmdb");
+    await delay(2000);
+    const db_snack = await readModbusData(2, "snack");
+    await delay(2000);
+    const db_wtp = await readModbusData(2, "wtp");
+    await delay(2000);
+    const db_cooling = await readModbusData(2, "cooling");
+    await delay(2000);
+    const db_lt1 = await readModbusData(2, "lt1");
+    await delay(2000);
+    const db_packaging = await readModbusData(2, "packaging");
+    await delay(2000);
+    const db_lampult1 = await readModbusData(2, "lampult1");
+    await delay(2000);
+    const db_lampu_ruangdingin = await readModbusData(2, "lampuruangdingin");
 
     io.emit("modbusData", {
       time: moment().format("LTS"),
       workshop: db_workshop,
       kompressor: db_kompressor,
+      lvmdb: db_lvmdb,
+      snack: db_snack,
+      wtp: db_wtp,
+      cooling: db_cooling,
+      lt1: db_lt1,
+      packaging: db_packaging,
+      lampult1: db_lampult1,
+      lampuruangdingin: db_lampu_ruangdingin,
     });
+
+    // latestData = {
+    //   time: moment().format("LTS"),
+    //   workshop: db_workshop,
+    //   kompressor: db_kompressor,
+    // };
 
     console.log(db_workshop);
     console.log(db_kompressor);
