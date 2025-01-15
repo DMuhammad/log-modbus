@@ -12,20 +12,13 @@ const app = express();
 const server = createServer(app);
 const io = socket.init(server);
 const configuration = new SerialPort({
-  path: "COM3",
+  path: process.env.PATH,
   baudRate: 9600,
   parity: "none",
   stopBits: 1,
   dataBits: 8,
 });
 moment.locale("id");
-
-// Inisialisasi variabel untuk menyimpan data terbaru
-let latestData = {
-  time: null,
-  workshop: null,
-  kompressor: null,
-};
 
 async function readModbusData(slaveId, area) {
   try {
@@ -43,7 +36,11 @@ async function readModbusData(slaveId, area) {
       client.slaveId == 2 ||
       client.slaveId == 3 ||
       client.slaveId == 4 ||
-      client.slaveId == 7
+      client.slaveId == 7 ||
+      client.slaveId == 11 ||
+      client.slaveId == 12 ||
+      client.slaveId == 13 ||
+      client.slaveId == 14
     ) {
       registerV1 = 0x0000;
       registerV2 = 0x0010;
@@ -58,7 +55,8 @@ async function readModbusData(slaveId, area) {
       client.slaveId == 6 ||
       client.slaveId == 8 ||
       client.slaveId == 9 ||
-      client.slaveId == 10
+      client.slaveId == 10 ||
+      client.slaveId == 15
     ) {
       registerV1 = 0x0000;
       registerV2 = 0x000a;
@@ -143,29 +141,40 @@ app.get("/api/data", (req, res) => {
   res.json(latestData);
 });
 
-server.listen(6969, "0.0.0.0", () => {
-  console.log("Server is running on port: 6969");
+server.listen(3000, "0.0.0.0", () => {
+  console.log("Server is running on port: 3000");
 
   setInterval(async () => {
     const db_workshop = await readModbusData(1, "workshop");
-    await delay(2000);
+    await delay(5000);
     const db_kompressor = await readModbusData(2, "kompressor");
-    await delay(2000);
+    await delay(5000);
     const db_lvmdb = await readModbusData(3, "lvmdb");
-    await delay(2000);
+    await delay(5000);
     const db_snack = await readModbusData(4, "snack");
-    await delay(2000);
+    await delay(5000);
     const db_wtp = await readModbusData(5, "wtp");
-    await delay(2000);
+    await delay(5000);
     const db_cooling = await readModbusData(6, "cooling");
-    await delay(2000);
+    await delay(5000);
     const db_lt1 = await readModbusData(7, "lt1");
-    await delay(2000);
+    await delay(5000);
     const db_packaging = await readModbusData(8, "packaging");
-    await delay(2000);
+    await delay(5000);
     const db_lampult1 = await readModbusData(9, "lampult1");
-    await delay(2000);
+    await delay(5000);
     const db_lampu_ruangdingin = await readModbusData(10, "lampuruangdingin");
+    await delay(5000);
+    const db_ruangdingin = await readModbusData(11, "ruangdingin");
+    await delay(5000);
+    const db_sugar = await readModbusData(12, "sugar");
+    await delay(5000);
+    const db_warehouse = await readModbusData(13, "warehouse");
+    await delay(5000);
+    const db_lt2 = await readModbusData(14, "lt2");
+    await delay(5000);
+    const db_filling = await readModbusData(15, "filling");
+    await delay(5000);
 
     io.emit("modbusData", {
       time: moment().format("LTS"),
@@ -179,9 +188,11 @@ server.listen(6969, "0.0.0.0", () => {
       packaging: db_packaging,
       lampult1: db_lampult1,
       lampuruangdingin: db_lampu_ruangdingin,
+      ruangdingin: db_ruangdingin,
+      gula: db_sugar,
+      gudang: db_warehouse,
+      lt2: db_lt2,
+      filling: db_filling,
     });
-
-    console.log(db_workshop);
-    console.log(db_kompressor);
-  }, 30000);
+  }, 90000);
 });
