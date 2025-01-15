@@ -102,9 +102,9 @@ async function readModbusData(slaveId, area) {
     data = {
       area: area,
       kwh: dataKwh.response.body.values[1],
-      v1: dataV1.response.body.values[1],
-      v2: dataV2.response.body.values[1],
-      v3: dataV3.response.body.values[1],
+      v1: dataV1.response.body.values[1] / 10,
+      v2: dataV2.response.body.values[1] / 10,
+      v3: dataV3.response.body.values[1] / 10,
       a1: dataA1.response.body.values[1] / 1000,
       a2: dataA2.response.body.values[1] / 1000,
       a3: dataA3.response.body.values[1] / 1000,
@@ -143,29 +143,29 @@ app.get("/api/data", (req, res) => {
   res.json(latestData);
 });
 
-server.listen(3000, "0.0.0.0", () => {
-  console.log("Server is running on port: 3000");
+server.listen(6969, "0.0.0.0", () => {
+  console.log("Server is running on port: 6969");
 
   setInterval(async () => {
     const db_workshop = await readModbusData(1, "workshop");
     await delay(2000);
     const db_kompressor = await readModbusData(2, "kompressor");
     await delay(2000);
-    const db_lvmdb = await readModbusData(2, "lvmdb");
+    const db_lvmdb = await readModbusData(3, "lvmdb");
     await delay(2000);
-    const db_snack = await readModbusData(2, "snack");
+    const db_snack = await readModbusData(4, "snack");
     await delay(2000);
-    const db_wtp = await readModbusData(2, "wtp");
+    const db_wtp = await readModbusData(5, "wtp");
     await delay(2000);
-    const db_cooling = await readModbusData(2, "cooling");
+    const db_cooling = await readModbusData(6, "cooling");
     await delay(2000);
-    const db_lt1 = await readModbusData(2, "lt1");
+    const db_lt1 = await readModbusData(7, "lt1");
     await delay(2000);
-    const db_packaging = await readModbusData(2, "packaging");
+    const db_packaging = await readModbusData(8, "packaging");
     await delay(2000);
-    const db_lampult1 = await readModbusData(2, "lampult1");
+    const db_lampult1 = await readModbusData(9, "lampult1");
     await delay(2000);
-    const db_lampu_ruangdingin = await readModbusData(2, "lampuruangdingin");
+    const db_lampu_ruangdingin = await readModbusData(10, "lampuruangdingin");
 
     io.emit("modbusData", {
       time: moment().format("LTS"),
@@ -181,13 +181,7 @@ server.listen(3000, "0.0.0.0", () => {
       lampuruangdingin: db_lampu_ruangdingin,
     });
 
-    // latestData = {
-    //   time: moment().format("LTS"),
-    //   workshop: db_workshop,
-    //   kompressor: db_kompressor,
-    // };
-
     console.log(db_workshop);
     console.log(db_kompressor);
-  }, 3000);
+  }, 30000);
 });
