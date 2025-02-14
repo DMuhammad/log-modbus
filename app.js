@@ -1,16 +1,17 @@
 const express = require("express");
 const cors = require("cors");
+const chalk = require('chalk')
 const modbus = require("jsmodbus");
+const moment = require('moment')
 const { SerialPort } = require("serialport");
 const axios = require("axios");
 const FormData = require("form-data");
-const delay = require("delay");
 require("dotenv").config();
 
 const app = express();
 const configuration = new SerialPort({
-  path: process.env.serial_port,
-  baudrate: 9600,
+  path: "COM4",
+  baudRate: 9600,
   parity: "even",
   stopBits: 1,
   dataBits: 8,
@@ -30,7 +31,7 @@ app.use(
 );
 
 const scheduleNextExecution = (callback) => {
-  const delay = 10 * 60 * 1000; // every 10 minute
+  const delay = 30 * 60 * 1000; // every 30 minute
   setTimeout(callback, delay);
 };
 
@@ -43,13 +44,13 @@ const fetchData = async () => {
       form.append("area", "mjl");
       form.append("nilai", data);
 
-      const response = await axios.post(process.env.server_url, form, {
+      await axios.post(process.env.server_url, form, {
         headers: {
           ...form.getHeaders(),
         },
       });
 
-      console.log(response.data);
+      console.log(chalk.green(`[${moment().format('DD/MM/YY HH:mm:ss')}] - Successfully get pasteur temperature: ${data}`))
     } catch (error) {
       console.log(error);
     }
@@ -75,6 +76,8 @@ app.post("/api/writePasteurData", async (req, res) => {
     const { pasteur } = req.body;
     const result = await client.writeSingleRegister(0o00, Number(pasteur));
 
+    console.log(chalk.green(`[${moment().format('DD/MM/YY HH:mm:ss')}] - Successfully set pasteur temperature to: ${result.response.body.fc}`))
+
     return res.status(200).json({
       status: true,
       data: result.response.body.fc,
@@ -92,7 +95,7 @@ configuration.on("open", () => {
     console.log(error);
   });
   app.listen("8888", "0.0.0.0", () => {
-    console.log("App running on port: 8888");
+    console.log(chalk.yellow(`App running on port: 8888`));
   });
 });
 
