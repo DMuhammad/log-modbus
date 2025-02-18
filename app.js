@@ -18,6 +18,8 @@ const configuration = new SerialPort({
 });
 const client = new modbus.client.RTU(configuration, 1, 2000);
 
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
+
 app.use(
   express.urlencoded({
     extended: false,
@@ -37,22 +39,28 @@ const scheduleNextExecution = (callback) => {
 
 const fetchData = async () => {
   const startPolling = async () => {
-    try {
-      const res = await client.readInputRegisters(1000, 1);
-      const data = res.response.body.values[0];
-      const form = new FormData();
-      form.append("area", "mjl");
-      form.append("nilai", data);
+    const maxRetries = 3
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        const res = await client.readInputRegisters(1000, 1);
+        const data = res.response.body.values[0];
+        const form = new FormData();
+        form.append("area", "mjl");
+        form.append("nilai", data);
 
-      await axios.post(process.env.server_url, form, {
-        headers: {
-          ...form.getHeaders(),
-        },
-      });
+        await axios.post(process.env.server_url, form, {
+          headers: {
+            ...form.getHeaders(),
+          },
+        });
 
-      console.log(chalk.green(`[${moment().format('DD/MM/YY HH:mm:ss')}] - Successfully get pasteur temperature: ${data}`))
-    } catch (error) {
-      console.log(error);
+        console.log(chalk.green(`[${moment().format('DD/MM/YY HH:mm:ss')}] - Successfully get pasteur temperature: ${data}`))
+      } catch (error) {
+        if (attempt == maxRetries) console.log(error)
+
+        console.log(chalk.yellow(`Attempt ${attempt} failed, retrying in 10s...`))
+        await sleep(10 * 1000)
+      }
     }
 
     scheduleNextExecution(() => startPolling());
