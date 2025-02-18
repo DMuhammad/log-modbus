@@ -10,7 +10,7 @@ require("dotenv").config();
 
 const app = express();
 const configuration = new SerialPort({
-  path: "COM4",
+  path: "COM5",
   baudRate: 9600,
   parity: "even",
   stopBits: 1,
@@ -40,7 +40,7 @@ const scheduleNextExecution = (callback) => {
 const fetchData = async () => {
   const startPolling = async () => {
     const maxRetries = 3
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         const res = await client.readInputRegisters(1000, 1);
         const data = res.response.body.values[0];
@@ -55,8 +55,12 @@ const fetchData = async () => {
         });
 
         console.log(chalk.green(`[${moment().format('DD/MM/YY HH:mm:ss')}] - Successfully get pasteur temperature: ${data}`))
+        return;
       } catch (error) {
-        if (attempt == maxRetries) console.log(error)
+        if (attempt == maxRetries) {
+          console.log(error)
+          return;
+        }
 
         console.log(chalk.yellow(`Attempt ${attempt} failed, retrying in 10s...`))
         await sleep(10 * 1000)
