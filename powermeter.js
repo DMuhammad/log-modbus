@@ -20,28 +20,28 @@ const configuration = new SerialPort({
   dataBits: 8,
 });
 
-const nrgs = [1, 5, 6, 8, 9, 10, 15];
-const cvms = [2, 3, 4, 7, 11, 12, 13, 14];
+const nrgs = [1, 5, 6, 8, 9, 10, 16];
+const cvms = [2, 3, 4, 7, 11, 12, 13, 14, 15, 17, 18, 19, 20];
 const areas = {
-  1: "LVMDB",
+  1: "Workshop",
   2: "Kompressor",
-  3: "Workshop",
-  4: "DB Snack",
+  3: "LVMDB",
+  4: "Genset - On Trigger",
   5: "DB Pump WTP",
   6: "DB Cooling Tower",
-  7: "DB 1st Floor",
+  7: "DB Production 1st Floor",
   8: "DB Packaging",
   9: "Lighting 1st Floor",
-  10: "Cold Room Lighting",
+  10: "Lighting Cold Room",
   11: "DB Cold Room",
   12: "DB Sugar Area",
   13: "Warehouse",
-  14: "DB 2nd Floor",
+  14: "DB Production 2nd Floor",
   15: "DB Filling Area",
   16: "DB Horizontal",
   17: "Lighting 2nd Floor",
   18: "DB Conveyor",
-  19: "DB 3rd Floor",
+  19: "DB Production 3rd Floor",
   20: "Lighting 3rd Floor",
 };
 
