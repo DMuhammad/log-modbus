@@ -104,6 +104,8 @@ const getPowerMeterData = async (slaveId) => {
       registerKwh = 0x3c;
     }
 
+    const scaleKwh = nrgs.includes(slaveId) ? 1000 : 1;
+
     const dataV1 = await client.readHoldingRegisters(
       registerV1,
       numberOfRegisters
@@ -223,7 +225,7 @@ const getPowerMeterData = async (slaveId) => {
       combineDWord(
         dataKwh.response.body.values[0],
         dataKwh.response.body.values[1]
-      ) / nrgs.includes(slaveId) ? 1000 : 1;
+      ) / scaleKwh;
 
     const form = new FormData();
     form.append("area", areas[slaveId]);
