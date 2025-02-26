@@ -194,27 +194,27 @@ const getPowerMeterData = async (slaveId) => {
     const thdA1 = combineDWord(
       dataThdA1.response.body.values[0],
       dataThdA1.response.body.values[1]
-    );
+    ) / 10;
     const thdA2 = combineDWord(
       dataThdA2.response.body.values[0],
       dataThdA2.response.body.values[1]
-    );
+    ) / 10;
     const thdA3 = combineDWord(
       dataThdA3.response.body.values[0],
       dataThdA3.response.body.values[1]
-    );
+    ) / 10;
     const thdV1 = combineDWord(
       dataThdV1.response.body.values[0],
       dataThdV1.response.body.values[1]
-    );
+    ) / 10;
     const thdV2 = combineDWord(
       dataThdV2.response.body.values[0],
       dataThdV2.response.body.values[1]
-    );
+    ) / 10;
     const thdV3 = combineDWord(
       dataThdV3.response.body.values[0],
       dataThdV3.response.body.values[1]
-    );
+    ) / 10;
     const cosP = combineDWord(
       dataCosP.response.body.values[0],
       dataCosP.response.body.values[1]
@@ -223,7 +223,7 @@ const getPowerMeterData = async (slaveId) => {
       combineDWord(
         dataKwh.response.body.values[0],
         dataKwh.response.body.values[1]
-      ) / 1000;
+      ) / nrgs.includes(slaveId) ? 1000 : 1;
 
     const form = new FormData();
     form.append("area", areas[slaveId]);
