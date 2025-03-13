@@ -11,6 +11,7 @@ const log = (color, message) => {
   const timestamp = moment().format("DD/MM/YY HH:mm:ss");
   console.log(chalk[color](`[${timestamp}] ${message}`));
 };
+const server_url = process.env.server_url;
 
 const configuration = new SerialPort({
   path: process.env.serial_port,
@@ -193,30 +194,36 @@ const getPowerMeterData = async (slaveId) => {
         dataV3.response.body.values[0],
         dataV3.response.body.values[1]
       ) / 10;
-    const thdA1 = combineDWord(
-      dataThdA1.response.body.values[0],
-      dataThdA1.response.body.values[1]
-    ) / 10;
-    const thdA2 = combineDWord(
-      dataThdA2.response.body.values[0],
-      dataThdA2.response.body.values[1]
-    ) / 10;
-    const thdA3 = combineDWord(
-      dataThdA3.response.body.values[0],
-      dataThdA3.response.body.values[1]
-    ) / 10;
-    const thdV1 = combineDWord(
-      dataThdV1.response.body.values[0],
-      dataThdV1.response.body.values[1]
-    ) / 10;
-    const thdV2 = combineDWord(
-      dataThdV2.response.body.values[0],
-      dataThdV2.response.body.values[1]
-    ) / 10;
-    const thdV3 = combineDWord(
-      dataThdV3.response.body.values[0],
-      dataThdV3.response.body.values[1]
-    ) / 10;
+    const thdA1 =
+      combineDWord(
+        dataThdA1.response.body.values[0],
+        dataThdA1.response.body.values[1]
+      ) / 10;
+    const thdA2 =
+      combineDWord(
+        dataThdA2.response.body.values[0],
+        dataThdA2.response.body.values[1]
+      ) / 10;
+    const thdA3 =
+      combineDWord(
+        dataThdA3.response.body.values[0],
+        dataThdA3.response.body.values[1]
+      ) / 10;
+    const thdV1 =
+      combineDWord(
+        dataThdV1.response.body.values[0],
+        dataThdV1.response.body.values[1]
+      ) / 10;
+    const thdV2 =
+      combineDWord(
+        dataThdV2.response.body.values[0],
+        dataThdV2.response.body.values[1]
+      ) / 10;
+    const thdV3 =
+      combineDWord(
+        dataThdV3.response.body.values[0],
+        dataThdV3.response.body.values[1]
+      ) / 10;
     const cosP = combineDWord(
       dataCosP.response.body.values[0],
       dataCosP.response.body.values[1]
@@ -244,7 +251,7 @@ const getPowerMeterData = async (slaveId) => {
     form.append("thdV2", thdV2);
     form.append("thdV3", thdV3);
 
-    await axios.post(process.env.server_url, form, {
+    await axios.post(`${server_url}/powermeter`, form, {
       headers: {
         ...form.getHeaders(),
       },
