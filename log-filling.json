@@ -1,0 +1,82 @@
+{
+  "31": {
+    "id": 1,
+    "machine": "GF 1",
+    "downtime": null,
+    "hourMeter": null,
+    "logHourMeter": 0,
+    "logDowntime": 0
+  },
+  "32": {
+    "id": 2,
+    "machine": "GF 2",
+    "downtime": null,
+    "hourMeter": null,
+    "logHourMeter": 0,
+    "logDowntime": 0
+  },
+  "33": {
+    "id": 3,
+    "machine": "GF 3",
+    "downtime": null,
+    "hourMeter": null,
+    "logHourMeter": 0,
+    "logDowntime": 0
+  },
+  "34": {
+    "id": 4,
+    "machine": "GF 4",
+    "downtime": null,
+    "hourMeter": null,
+    "logHourMeter": 0,
+    "logDowntime": 0
+  },
+  "35": {
+    "id": 5,
+    "machine": "GF 5",
+    "downtime": null,
+    "hourMeter": null,
+    "logHourMeter": 0,
+    "logDowntime": 0
+  },
+  "36": {
+    "id": 6,
+    "machine": "GF 6",
+    "downtime": null,
+    "hourMeter": null,
+    "logHourMeter": 0,
+    "logDowntime": 0
+  },
+  "37": {
+    "id": 7,
+    "machine": "GF 7",
+    "downtime": null,
+    "hourMeter": null,
+    "logHourMeter": 0,
+    "logDowntime": 0
+  },
+  "38": {
+    "id": 8,
+    "machine": "GF 8",
+    "downtime": null,
+    "hourMeter": null,
+    "logHourMeter": 0,
+    "logDowntime": 0
+  },
+  "39": {
+    "id": 9,
+    "machine": "GF 9",
+    "downtime": null,
+    "hourMeter": null,
+    "logHourMeter": 0,
+    "logDowntime": 0
+  },
+  "40": {
+    "id": 10,
+    "machine": "GF 10",
+    "downtime": null,
+    "hourMeter": null,
+    "logHourMeter": 0,
+    "logDowntime": 0
+  }
+}
