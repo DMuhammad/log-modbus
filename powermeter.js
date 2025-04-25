@@ -46,194 +46,146 @@ const areas = {
   20: "Lighting 3rd Floor",
 };
 
+const registerConfigs = {
+  cvm: {
+    registerV1: 0x00,
+    registerV2: 0x01,
+    registerV3: 0x02,
+    registerA1: 0x03,
+    registerA2: 0x12,
+    registerA3: 0x22,
+    registerCosP: 0x3a,
+    registerThdV1: 0x46,
+    registerThdV2: 0x48,
+    registerThdV3: 0x4a,
+    registerThdA1: 0x4c,
+    registerThdA2: 0x4e,
+    registerThdA3: 0x50,
+    registerKwh: 0xdc,
+    scaleKwh: 1,
+    scaleCurrent: 1000,
+    scaleVoltage: 10,
+    scaleThd: 10
+  },
+  nrg: {
+    registerV1: 0x00,
+    registerV2: 0x0a,
+    registerV3: 0x14,
+    registerA1: 0x02,
+    registerA2: 0x0c,
+    registerA3: 0x16,
+    registerCosP: 0x24,
+    registerThdV1: 0x30,
+    registerThdV2: 0x32,
+    registerThdV3: 0x34,
+    registerThdA1: 0x36,
+    registerThdA2: 0x38,
+    registerThdA3: 0x3a,
+    registerKwh: 0x3c,
+    scaleKwh: 1000,
+    scaleCurrent: 1000,
+    scaleVoltage: 10,
+    scaleThd: 10
+  }
+};
+
 const combineDWord = (highWord, lowWord) => {
   highWord = highWord >>> 0;
   lowWord = lowWord >>> 0;
 
-  return highWord * 0x10000 + lowWord; // 0x10000 == 2^16
+  return highWord * 0x10000 + lowWord; // 0x10000 == 2^16
+};
+
+const validateRegisterValue = (value, min = 0, max = Number.MAX_SAFE_INTEGER) => {
+  if (value === null || value === undefined || isNaN(value)) {
+    return false;
+  }
+  return value >= min && value <= max;
+};
+
+const readRegistersWithRetry = async (client, register, numberOfRegisters, maxRetries = 3) => {
+  let retries = 0;
+  let lastError = null;
+  
+  while (retries < maxRetries) {
+    try {
+      const result = await client.readHoldingRegisters(register, numberOfRegisters);
+      return result;
+    } catch (error) {
+      lastError = error;
+      retries++;
+      log("yellow", `Retry ${retries}/${maxRetries} for register ${register.toString(16)}: ${error.message}`);
+      await delay(1000 * retries); // Exponential backoff
+    }
+  }
+  
+  throw new Error(`Failed to read register ${register.toString(16)} after ${maxRetries} retries: ${lastError.message}`);
+};
+
+const processRegisterData = (data, scale = 1) => {
+  if (!data || !data.response || !data.response.body || !data.response.body.values || 
+      data.response.body.values.length < 2) {
+    throw new Error("Invalid register data format");
+  }
+  
+  const value = combineDWord(
+    data.response.body.values[0],
+    data.response.body.values[1]
+  ) / scale;
+  
+  if (!validateRegisterValue(value)) {
+    throw new Error(`Invalid register value: ${value}`);
+  }
+  
+  return value;
 };
 
 const getPowerMeterData = async (slaveId) => {
+  if (!areas[slaveId]) {
+    throw new Error(`Invalid slave ID: ${slaveId}`);
+  }
+  
+  const deviceType = cvms.includes(slaveId) ? 'cvm' : nrgs.includes(slaveId) ? 'nrg' : null;
+  if (!deviceType) {
+    throw new Error(`Slave ID ${slaveId} is not configured for any device type`);
+  }
+  
+  const config = registerConfigs[deviceType];
+  const numberOfRegisters = 2;
+  
+  const client = new modbus.client.RTU(configuration, slaveId, 5000);
+  
   try {
-    const client = new modbus.client.RTU(configuration, slaveId, 5000);
-    const numberOfRegisters = 2;
-
-    let registerA1;
-    let registerA2;
-    let registerA3;
-    let registerV1;
-    let registerV2;
-    let registerV3;
-    let registerCosP;
-    let registerThdA1;
-    let registerThdA2;
-    let registerThdA3;
-    let registerThdV1;
-    let registerThdV2;
-    let registerThdV3;
-    let registerKwh;
-
-    if (cvms.includes(slaveId)) {
-      registerV1 = 0x00;
-      registerV2 = 0x01;
-      registerV3 = 0x02;
-      registerA1 = 0x02;
-      registerA2 = 0x12;
-      registerA3 = 0x22;
-      registerCosP = 0x3a;
-      registerThdV1 = 0x46;
-      registerThdV2 = 0x48;
-      registerThdV3 = 0x4a;
-      registerThdA1 = 0x4c;
-      registerThdA2 = 0x4e;
-      registerThdA3 = 0x50;
-      registerKwh = 0xdc;
-    } else if (nrgs.includes(slaveId)) {
-      registerV1 = 0x00;
-      registerV2 = 0x0a;
-      registerV3 = 0x14;
-      registerA1 = 0x02;
-      registerA2 = 0x0c;
-      registerA3 = 0x16;
-      registerCosP = 0x24;
-      registerThdV1 = 0x30;
-      registerThdV2 = 0x32;
-      registerThdV3 = 0x34;
-      registerThdA1 = 0x36;
-      registerThdA2 = 0x38;
-      registerThdA3 = 0x3a;
-      registerKwh = 0x3c;
-    }
-
-    const scaleKwh = nrgs.includes(slaveId) ? 1000 : 1;
-
-    const dataV1 = await client.readHoldingRegisters(
-      registerV1,
-      numberOfRegisters
-    );
-    const dataV2 = await client.readHoldingRegisters(
-      registerV2,
-      numberOfRegisters
-    );
-    const dataV3 = await client.readHoldingRegisters(
-      registerV3,
-      numberOfRegisters
-    );
-    const dataA1 = await client.readHoldingRegisters(
-      registerA1,
-      numberOfRegisters
-    );
-    const dataA2 = await client.readHoldingRegisters(
-      registerA2,
-      numberOfRegisters
-    );
-    const dataA3 = await client.readHoldingRegisters(
-      registerA3,
-      numberOfRegisters
-    );
-    const dataCosP = await client.readHoldingRegisters(
-      registerCosP,
-      numberOfRegisters
-    );
-    const dataThdA1 = await client.readHoldingRegisters(
-      registerThdA1,
-      numberOfRegisters
-    );
-    const dataThdA2 = await client.readHoldingRegisters(
-      registerThdA2,
-      numberOfRegisters
-    );
-    const dataThdA3 = await client.readHoldingRegisters(
-      registerThdA3,
-      numberOfRegisters
-    );
-    const dataThdV1 = await client.readHoldingRegisters(
-      registerThdV1,
-      numberOfRegisters
-    );
-    const dataThdV2 = await client.readHoldingRegisters(
-      registerThdV2,
-      numberOfRegisters
-    );
-    const dataThdV3 = await client.readHoldingRegisters(
-      registerThdV3,
-      numberOfRegisters
-    );
-    const dataKwh = await client.readHoldingRegisters(
-      registerKwh,
-      numberOfRegisters
-    );
-
-    const a1 =
-      combineDWord(
-        dataA1.response.body.values[0],
-        dataA1.response.body.values[1]
-      ) / 1000;
-    const a2 =
-      combineDWord(
-        dataA2.response.body.values[0],
-        dataA2.response.body.values[1]
-      ) / 1000;
-    const a3 =
-      combineDWord(
-        dataA3.response.body.values[0],
-        dataA3.response.body.values[1]
-      ) / 1000;
-    const v1 =
-      combineDWord(
-        dataV1.response.body.values[0],
-        dataV1.response.body.values[1]
-      ) / 10;
-    const v2 =
-      combineDWord(
-        dataV2.response.body.values[0],
-        dataV2.response.body.values[1]
-      ) / 10;
-    const v3 =
-      combineDWord(
-        dataV3.response.body.values[0],
-        dataV3.response.body.values[1]
-      ) / 10;
-    const thdA1 =
-      combineDWord(
-        dataThdA1.response.body.values[0],
-        dataThdA1.response.body.values[1]
-      ) / 10;
-    const thdA2 =
-      combineDWord(
-        dataThdA2.response.body.values[0],
-        dataThdA2.response.body.values[1]
-      ) / 10;
-    const thdA3 =
-      combineDWord(
-        dataThdA3.response.body.values[0],
-        dataThdA3.response.body.values[1]
-      ) / 10;
-    const thdV1 =
-      combineDWord(
-        dataThdV1.response.body.values[0],
-        dataThdV1.response.body.values[1]
-      ) / 10;
-    const thdV2 =
-      combineDWord(
-        dataThdV2.response.body.values[0],
-        dataThdV2.response.body.values[1]
-      ) / 10;
-    const thdV3 =
-      combineDWord(
-        dataThdV3.response.body.values[0],
-        dataThdV3.response.body.values[1]
-      ) / 10;
-    const cosP = combineDWord(
-      dataCosP.response.body.values[0],
-      dataCosP.response.body.values[1]
-    );
-    const kwh =
-      combineDWord(
-        dataKwh.response.body.values[0],
-        dataKwh.response.body.values[1]
-      ) / scaleKwh;
-
+    const dataV1 = await readRegistersWithRetry(client, config.registerV1, numberOfRegisters);
+    const dataV2 = await readRegistersWithRetry(client, config.registerV2, numberOfRegisters);
+    const dataV3 = await readRegistersWithRetry(client, config.registerV3, numberOfRegisters);
+    const dataA1 = await readRegistersWithRetry(client, config.registerA1, numberOfRegisters);
+    const dataA2 = await readRegistersWithRetry(client, config.registerA2, numberOfRegisters);
+    const dataA3 = await readRegistersWithRetry(client, config.registerA3, numberOfRegisters);
+    const dataCosP = await readRegistersWithRetry(client, config.registerCosP, numberOfRegisters);
+    const dataThdA1 = await readRegistersWithRetry(client, config.registerThdA1, numberOfRegisters);
+    const dataThdA2 = await readRegistersWithRetry(client, config.registerThdA2, numberOfRegisters);
+    const dataThdA3 = await readRegistersWithRetry(client, config.registerThdA3, numberOfRegisters);
+    const dataThdV1 = await readRegistersWithRetry(client, config.registerThdV1, numberOfRegisters);
+    const dataThdV2 = await readRegistersWithRetry(client, config.registerThdV2, numberOfRegisters);
+    const dataThdV3 = await readRegistersWithRetry(client, config.registerThdV3, numberOfRegisters);
+    const dataKwh = await readRegistersWithRetry(client, config.registerKwh, numberOfRegisters);
+    
+    const a1 = processRegisterData(dataA1, config.scaleCurrent);
+    const a2 = processRegisterData(dataA2, config.scaleCurrent);
+    const a3 = processRegisterData(dataA3, config.scaleCurrent);
+    const v1 = processRegisterData(dataV1, config.scaleVoltage);
+    const v2 = processRegisterData(dataV2, config.scaleVoltage);
+    const v3 = processRegisterData(dataV3, config.scaleVoltage);
+    const thdA1 = processRegisterData(dataThdA1, config.scaleThd);
+    const thdA2 = processRegisterData(dataThdA2, config.scaleThd);
+    const thdA3 = processRegisterData(dataThdA3, config.scaleThd);
+    const thdV1 = processRegisterData(dataThdV1, config.scaleThd);
+    const thdV2 = processRegisterData(dataThdV2, config.scaleThd);
+    const thdV3 = processRegisterData(dataThdV3, config.scaleThd);
+    const cosP = processRegisterData(dataCosP);
+    const kwh = processRegisterData(dataKwh, config.scaleKwh);
+    
     const form = new FormData();
     form.append("area", areas[slaveId]);
     form.append("kwh", kwh);
@@ -250,48 +202,92 @@ const getPowerMeterData = async (slaveId) => {
     form.append("thdV1", thdV1);
     form.append("thdV2", thdV2);
     form.append("thdV3", thdV3);
-
-    await axios.post(`${server_url}/powermeter`, form, {
-      headers: {
-        ...form.getHeaders(),
-      },
-    });
-
-    log("green", `kwh: ${kwh}`);
-    log("green", `a1: ${a1}`);
-    log("green", `a2: ${a2}`);
-    log("green", `a3: ${a3}`);
-    log("green", `v1: ${v1}`);
-    log("green", `v2: ${v2}`);
-    log("green", `v3: ${v3}`);
-    log("green", `cosP: ${cosP}`);
-    log("green", `THD A1: ${thdA1}`);
-    log("green", `THD A2: ${thdA2}`);
-    log("green", `THD A3: ${thdA3}`);
-    log("green", `THD V1: ${thdV1}`);
-    log("green", `THD V2: ${thdV2}`);
-    log("green", `THD V3: ${thdV3}`);
+    
+    try {
+      const response = await axios.post(`${server_url}/powermeter`, form, {
+        headers: {
+          ...form.getHeaders(),
+        },
+        timeout: 10000
+      });
+      
+      log("green", `Successfully sent data for ${areas[slaveId]}`);
+      log("green", `kwh: ${kwh}`);
+      
+      const logCurrent = (value, phase) => {
+        const color = value > 10 ? "red" : value > 5 ? "yellow" : "green";
+        log(color, `a${phase}: ${value}`);
+      };
+      logCurrent(a1, 1);
+      logCurrent(a2, 2);
+      logCurrent(a3, 3);
+      
+      const logVoltage = (value, phase) => {
+        const color = value < 200 || value > 240 ? "red" : value < 210 || value > 230 ? "yellow" : "green";
+        log(color, `v${phase}: ${value}`);
+      };
+      logVoltage(v1, 1);
+      logVoltage(v2, 2);
+      logVoltage(v3, 3);
+      
+      const logCosP = (value) => {
+        const color = value < 0.8 ? "red" : value < 0.9 ? "yellow" : "green";
+        log(color, `cosP: ${value}`);
+      };
+      logCosP(cosP);
+      
+      const logThd = (value, type, phase) => {
+        const color = value > 10 ? "red" : value > 5 ? "yellow" : "green";
+        log(color, `THD ${type}${phase}: ${value}`);
+      };
+      logThd(thdA1, "A", 1);
+      logThd(thdA2, "A", 2);
+      logThd(thdA3, "A", 3);
+      logThd(thdV1, "V", 1);
+      logThd(thdV2, "V", 2);
+      logThd(thdV3, "V", 3);
+      
+      return response.data;
+    } catch (apiError) {
+      log("red", `API Error for ${areas[slaveId]}: ${apiError.message}`);
+      throw apiError;
+    }
   } catch (error) {
-    console.log(error);
+    log("red", `Error reading data from ${areas[slaveId]}: ${error.message}`);
+    throw error;
+  } finally {
+    log("blue", `Completed reading data from ${areas[slaveId]}`);
   }
 };
 
 configuration.setMaxListeners(0);
 configuration.on("open", async () => {
+  log("green", "Serial port opened successfully");
+  
   while (true) {
-    for (let i = 1; i <= 20; i++) {
-      log("blue", `Wait for getting data from ${areas[i]}`);
-      getPowerMeterData(i).catch((err) => {
-        console.log(err);
-        process.exit(1);
-      });
-      await delay(3000);
+    try {
+      for (let i = 1; i <= 20; i++) {
+        log("blue", `Reading data from ${areas[i]}`);
+        try {
+          await getPowerMeterData(i);
+        } catch (err) {
+          log("red", `Failed to read data from ${areas[i]}: ${err.message}`);
+        }
+        await delay(3000);
+      }
+      log("yellow", "Completed one cycle, waiting for next execution");
+      await delay(30 * 60 * 1000);
+    } catch (cycleError) {
+      log("red", `Error in main cycle: ${cycleError.message}`);
+      await delay(60 * 1000);
     }
-    log("yellow", "Waiting for next execution");
-    await delay(30 * 60 * 1000);
   }
 });
 
 configuration.on("error", (err) => {
-  log("red", err.message);
+  log("red", `Serial port error: ${err.message}`);
+  setTimeout(() => {
+    log("yellow", "Attempting to reconnect...");
+    configuration.open();
+  }, 5000);
 });
