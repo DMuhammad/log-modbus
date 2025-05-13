@@ -1,0 +1,28 @@
+{
+  "general": {
+    "serial_port": "COM3"
+  },
+  "devices": [
+    {
+      "device": "printer",
+      "area": "tarami",
+      "address": 41,
+      "registerAddresses": [4504],
+      "url": "/print-tarami"
+    },
+    {
+      "device": "metal detector",
+      "area": "mjl",
+      "address": 41,
+      "registerAddresses": [4506],
+      "url": "/metal-counter-mjl"
+    },
+    {
+      "device": "carton erector",
+      "area": "mjl",
+      "address": 41,
+      "registerAddresses": [4508],
+      "url": "/carton-counter-mjl"
+    }
+  ]
+}
