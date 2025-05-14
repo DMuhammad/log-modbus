@@ -47,7 +47,7 @@ const getPrinterData = async (server_url, devices, configuration) => {
     const printerCounter = dataCounter.response.body.values[0];
 
     const form = new FormData();
-    form.append("counter", printerCounter);
+    form.append("print_counter", printerCounter);
 
     await axios.post(`${server_url}${url}`, form, {
       headers: {

@@ -47,7 +47,8 @@ const getCartonData = async (server_url, devices, configuration) => {
     const cartonCounter = dataCounter.response.body.values[0];
 
     const form = new FormData();
-    form.append("counter", cartonCounter);
+    form.append("tipe", "carton_erector");
+    form.append("carton_counter", cartonCounter);
 
     await axios.post(`${server_url}${url}`, form, {
       headers: {
