@@ -21,8 +21,8 @@ const configuration = new SerialPort({
   dataBits: 8,
 });
 
-const nrgs = [1, 5, 6, 8, 9, 10, 16];
-const cvms = [2, 3, 4, 7, 11, 12, 13, 14, 15, 17, 18, 19, 20];
+const nrgs = [1, 5, 6, 9, 10, 16];
+const cvms = [2, 3, 4, 7, 8, 11, 12, 13, 14, 15, 17, 18, 19, 20];
 const areas = {
   1: "Workshop",
   2: "Kompressor",
@@ -65,7 +65,7 @@ const registerConfigs = {
     scaleKwh: 1,
     scaleCurrent: 1000,
     scaleVoltage: 10,
-    scaleThd: 10
+    scaleThd: 10,
   },
   nrg: {
     registerV1: 0x00,
@@ -85,8 +85,8 @@ const registerConfigs = {
     scaleKwh: 1000,
     scaleCurrent: 1000,
     scaleVoltage: 10,
-    scaleThd: 10
-  }
+    scaleThd: 10,
+  },
 };
 
 const combineDWord = (highWord, lowWord) => {
@@ -96,47 +96,72 @@ const combineDWord = (highWord, lowWord) => {
   return highWord * 0x10000 + lowWord; // 0x10000 == 2^16
 };
 
-const validateRegisterValue = (value, min = 0, max = Number.MAX_SAFE_INTEGER) => {
+const validateRegisterValue = (
+  value,
+  min = 0,
+  max = Number.MAX_SAFE_INTEGER
+) => {
   if (value === null || value === undefined || isNaN(value)) {
     return false;
   }
   return value >= min && value <= max;
 };
 
-const readRegistersWithRetry = async (client, register, numberOfRegisters, maxRetries = 3) => {
+const readRegistersWithRetry = async (
+  client,
+  register,
+  numberOfRegisters,
+  maxRetries = 3
+) => {
   let retries = 0;
   let lastError = null;
-  
+
   while (retries < maxRetries) {
     try {
-      const result = await client.readHoldingRegisters(register, numberOfRegisters);
+      const result = await client.readHoldingRegisters(
+        register,
+        numberOfRegisters
+      );
       return result;
     } catch (error) {
       lastError = error;
       retries++;
-      log("yellow", `Retry ${retries}/${maxRetries} for register ${register.toString(16)}: ${error.message}`);
+      log(
+        "yellow",
+        `Retry ${retries}/${maxRetries} for register ${register.toString(
+          16
+        )}: ${error.message}`
+      );
       await delay(1000 * retries); // Exponential backoff
     }
   }
-  
-  throw new Error(`Failed to read register ${register.toString(16)} after ${maxRetries} retries: ${lastError.message}`);
+
+  throw new Error(
+    `Failed to read register ${register.toString(
+      16
+    )} after ${maxRetries} retries: ${lastError.message}`
+  );
 };
 
 const processRegisterData = (data, scale = 1) => {
-  if (!data || !data.response || !data.response.body || !data.response.body.values || 
-      data.response.body.values.length < 2) {
+  if (
+    !data ||
+    !data.response ||
+    !data.response.body ||
+    !data.response.body.values ||
+    data.response.body.values.length < 2
+  ) {
     throw new Error("Invalid register data format");
   }
-  
-  const value = combineDWord(
-    data.response.body.values[0],
-    data.response.body.values[1]
-  ) / scale;
-  
+
+  const value =
+    combineDWord(data.response.body.values[0], data.response.body.values[1]) /
+    scale;
+
   if (!validateRegisterValue(value)) {
     throw new Error(`Invalid register value: ${value}`);
   }
-  
+
   return value;
 };
 
@@ -144,33 +169,95 @@ const getPowerMeterData = async (slaveId) => {
   if (!areas[slaveId]) {
     throw new Error(`Invalid slave ID: ${slaveId}`);
   }
-  
-  const deviceType = cvms.includes(slaveId) ? 'cvm' : nrgs.includes(slaveId) ? 'nrg' : null;
+
+  const deviceType = cvms.includes(slaveId)
+    ? "cvm"
+    : nrgs.includes(slaveId)
+    ? "nrg"
+    : null;
   if (!deviceType) {
-    throw new Error(`Slave ID ${slaveId} is not configured for any device type`);
+    throw new Error(
+      `Slave ID ${slaveId} is not configured for any device type`
+    );
   }
-  
+
   const config = registerConfigs[deviceType];
   const numberOfRegisters = 2;
-  
+
   const client = new modbus.client.RTU(configuration, slaveId, 5000);
-  
+
   try {
-    const dataV1 = await readRegistersWithRetry(client, config.registerV1, numberOfRegisters);
-    const dataV2 = await readRegistersWithRetry(client, config.registerV2, numberOfRegisters);
-    const dataV3 = await readRegistersWithRetry(client, config.registerV3, numberOfRegisters);
-    const dataA1 = await readRegistersWithRetry(client, config.registerA1, numberOfRegisters);
-    const dataA2 = await readRegistersWithRetry(client, config.registerA2, numberOfRegisters);
-    const dataA3 = await readRegistersWithRetry(client, config.registerA3, numberOfRegisters);
-    const dataCosP = await readRegistersWithRetry(client, config.registerCosP, numberOfRegisters);
-    const dataThdA1 = await readRegistersWithRetry(client, config.registerThdA1, numberOfRegisters);
-    const dataThdA2 = await readRegistersWithRetry(client, config.registerThdA2, numberOfRegisters);
-    const dataThdA3 = await readRegistersWithRetry(client, config.registerThdA3, numberOfRegisters);
-    const dataThdV1 = await readRegistersWithRetry(client, config.registerThdV1, numberOfRegisters);
-    const dataThdV2 = await readRegistersWithRetry(client, config.registerThdV2, numberOfRegisters);
-    const dataThdV3 = await readRegistersWithRetry(client, config.registerThdV3, numberOfRegisters);
-    const dataKwh = await readRegistersWithRetry(client, config.registerKwh, numberOfRegisters);
-    
+    const dataV1 = await readRegistersWithRetry(
+      client,
+      config.registerV1,
+      numberOfRegisters
+    );
+    const dataV2 = await readRegistersWithRetry(
+      client,
+      config.registerV2,
+      numberOfRegisters
+    );
+    const dataV3 = await readRegistersWithRetry(
+      client,
+      config.registerV3,
+      numberOfRegisters
+    );
+    const dataA1 = await readRegistersWithRetry(
+      client,
+      config.registerA1,
+      numberOfRegisters
+    );
+    const dataA2 = await readRegistersWithRetry(
+      client,
+      config.registerA2,
+      numberOfRegisters
+    );
+    const dataA3 = await readRegistersWithRetry(
+      client,
+      config.registerA3,
+      numberOfRegisters
+    );
+    const dataCosP = await readRegistersWithRetry(
+      client,
+      config.registerCosP,
+      numberOfRegisters
+    );
+    const dataThdA1 = await readRegistersWithRetry(
+      client,
+      config.registerThdA1,
+      numberOfRegisters
+    );
+    const dataThdA2 = await readRegistersWithRetry(
+      client,
+      config.registerThdA2,
+      numberOfRegisters
+    );
+    const dataThdA3 = await readRegistersWithRetry(
+      client,
+      config.registerThdA3,
+      numberOfRegisters
+    );
+    const dataThdV1 = await readRegistersWithRetry(
+      client,
+      config.registerThdV1,
+      numberOfRegisters
+    );
+    const dataThdV2 = await readRegistersWithRetry(
+      client,
+      config.registerThdV2,
+      numberOfRegisters
+    );
+    const dataThdV3 = await readRegistersWithRetry(
+      client,
+      config.registerThdV3,
+      numberOfRegisters
+    );
+    const dataKwh = await readRegistersWithRetry(
+      client,
+      config.registerKwh,
+      numberOfRegisters
+    );
+
     const a1 = processRegisterData(dataA1, config.scaleCurrent);
     const a2 = processRegisterData(dataA2, config.scaleCurrent);
     const a3 = processRegisterData(dataA3, config.scaleCurrent);
@@ -185,7 +272,7 @@ const getPowerMeterData = async (slaveId) => {
     const thdV3 = processRegisterData(dataThdV3, config.scaleThd);
     const cosP = processRegisterData(dataCosP);
     const kwh = processRegisterData(dataKwh, config.scaleKwh);
-    
+
     const form = new FormData();
     form.append("area", areas[slaveId]);
     form.append("kwh", kwh);
@@ -202,18 +289,18 @@ const getPowerMeterData = async (slaveId) => {
     form.append("thdV1", thdV1);
     form.append("thdV2", thdV2);
     form.append("thdV3", thdV3);
-    
+
     try {
       const response = await axios.post(`${server_url}/powermeter`, form, {
         headers: {
           ...form.getHeaders(),
         },
-        timeout: 10000
+        timeout: 10000,
       });
-      
+
       log("green", `Successfully sent data for ${areas[slaveId]}`);
       log("green", `kwh: ${kwh}`);
-      
+
       const logCurrent = (value, phase) => {
         const color = value > 10 ? "red" : value > 5 ? "yellow" : "green";
         log(color, `a${phase}: ${value}`);
@@ -221,21 +308,26 @@ const getPowerMeterData = async (slaveId) => {
       logCurrent(a1, 1);
       logCurrent(a2, 2);
       logCurrent(a3, 3);
-      
+
       const logVoltage = (value, phase) => {
-        const color = value < 200 || value > 240 ? "red" : value < 210 || value > 230 ? "yellow" : "green";
+        const color =
+          value < 200 || value > 240
+            ? "red"
+            : value < 210 || value > 230
+            ? "yellow"
+            : "green";
         log(color, `v${phase}: ${value}`);
       };
       logVoltage(v1, 1);
       logVoltage(v2, 2);
       logVoltage(v3, 3);
-      
+
       const logCosP = (value) => {
         const color = value < 0.8 ? "red" : value < 0.9 ? "yellow" : "green";
         log(color, `cosP: ${value}`);
       };
       logCosP(cosP);
-      
+
       const logThd = (value, type, phase) => {
         const color = value > 10 ? "red" : value > 5 ? "yellow" : "green";
         log(color, `THD ${type}${phase}: ${value}`);
@@ -246,7 +338,7 @@ const getPowerMeterData = async (slaveId) => {
       logThd(thdV1, "V", 1);
       logThd(thdV2, "V", 2);
       logThd(thdV3, "V", 3);
-      
+
       return response.data;
     } catch (apiError) {
       log("red", `API Error for ${areas[slaveId]}: ${apiError.message}`);
@@ -263,7 +355,7 @@ const getPowerMeterData = async (slaveId) => {
 configuration.setMaxListeners(0);
 configuration.on("open", async () => {
   log("green", "Serial port opened successfully");
-  
+
   while (true) {
     try {
       for (let i = 1; i <= 20; i++) {
