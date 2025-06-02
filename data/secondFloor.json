@@ -23,6 +23,26 @@
       "address": 41,
       "registerAddresses": [4508],
       "url": "/carton-counter-mjl"
+    },
+    {
+      "device": "carton sealer",
+      "area": "mjl",
+      "address": 41,
+      "sealers": [
+        {
+          "machine": "pam a",
+          "registerAddress": 4510
+        },
+        {
+          "machine": "pam b",
+          "registerAddress": 4512
+        },
+        {
+          "machine": "pam c",
+          "registerAddress": 4514
+        }
+      ],
+      "url": "/carton-counter-mjl"
     }
   ]
 }
