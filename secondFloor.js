@@ -10,6 +10,7 @@ const getFillingData = require("./src/fillingMJL");
 const getMetalData = require("./src/metalDetector");
 const getCartonData = require("./src/cartonErectorMJL");
 const getPrinterData = require("./src/printerTarami");
+const getCartonSealerData = require("./src/cartonSealerPAM");
 
 const {
   devices,
@@ -38,6 +39,9 @@ configuration.on("open", async () => {
           }
           if (devices[i].device.includes("carton erector")) {
             await getCartonData(server_url, devices[i], configuration);
+          }
+          if (devices[i].device.includes("carton sealer")) {
+            await getCartonSealerData(server_url, devices[i], configuration);
           }
           if (devices[i].device.includes("GF")) {
             await getFillingData(server_url, devices[i], configuration);
