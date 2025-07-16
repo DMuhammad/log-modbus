@@ -15,7 +15,10 @@ const getMetalData = async (server_url, devices, configuration) => {
     const metalCounter = dataCounter.response.body.values[0];
 
     const form = new FormData();
-    form.append("tipe", "metal_detector");
+    if (area == "mjl") {
+      form.append("tipe", "metal_detector");
+    }
+
     form.append("metal_counter", metalCounter);
 
     await axios.post(`${server_url}${url}`, form, {
